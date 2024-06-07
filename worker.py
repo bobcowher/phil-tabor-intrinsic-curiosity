@@ -16,7 +16,7 @@ def worker(name, input_shape, n_actions, global_agent, optimizer, env_id, n_thre
     frame_buffer = [input_shape[1], input_shape[2], 1]
     env = make_env(env_id, shape=frame_buffer)
 
-    episode, max_eps, time_steps, scores = 0, 1000, 0, []
+    episode, max_eps, time_steps, scores = 0, 5e5, 0, []
 
     while episode < max_eps:
         obs = env.reset()
@@ -27,7 +27,8 @@ def worker(name, input_shape, n_actions, global_agent, optimizer, env_id, n_thre
             action, value, log_prob, hx = local_agent(state, hx)
             next_obs, reward, done, truncated, info = env.step(action)
             memory.remember(reward, value, log_prob)
-            print(f"Reward: {reward}")
+            # memory.remember(obs, action, next_obs, reward, value, log_prob)
+            # print(f"Reward: {reward}")
             score += reward
             obs = next_obs
             ep_steps += 1
@@ -45,15 +46,16 @@ def worker(name, input_shape, n_actions, global_agent, optimizer, env_id, n_thre
                 optimizer.step()
                 local_agent.load_state_dict(global_agent.state_dict())
                 memory.clear_memory()
-            episode += 1
-            # with global_idx.get_lock():
-            #     global_idx.value += 1 
-            if name == '1':
-                scores.append(score)
-                avg_score = np.mean(scores[-100:])
-                print(f'A3C episode {episode} thread {name} of {n_threads} steps {time_steps/1e6 :.2f}M', 
-                      f'score {score} avg score (100) {avg_score:.2f}')
-
+                
+        episode += 1
+        # with global_idx.get_lock():
+        #     global_idx.value += 1 
         if name == '1':
-            x = [z for z in range(episode)]
-            plot_learning_curve(x, scores, 'A3C_pong_final.png')
+            scores.append(score)
+            avg_score = np.mean(scores[-100:])
+            print(f'A3C episode {episode} thread {name} of {n_threads} steps {time_steps/1e6 :.2f}M', 
+                    f'score {score} avg score (100) {avg_score:.2f}')
+
+    if name == '1':
+        x = [z for z in range(episode)]
+        plot_learning_curve(x, scores, 'A3C_pong_final.png')
