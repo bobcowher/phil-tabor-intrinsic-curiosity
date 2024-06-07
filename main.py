@@ -9,7 +9,7 @@ if __name__ == '__main__':
     mp.set_start_method('spawn')
     global_ep = mp.Value('i', 0)
     env_id = 'PongNoFrameskip-v4'
-    n_threads = 4
+    n_threads = 16
     n_actions = 6
     input_shape = [4, 42, 42]
 

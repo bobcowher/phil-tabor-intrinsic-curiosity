@@ -1,4 +1,4 @@
-gym==0.23.0
+gym==0.23.1
 # gym[atari]
 autorom[accept-rom-license]
 matplotlib==3.8.2

@@ -25,8 +25,9 @@ def worker(name, input_shape, n_actions, global_agent, optimizer, env_id, n_thre
         while not done:
             state = T.tensor([obs], dtype=T.float)
             action, value, log_prob, hx = local_agent(state, hx)
-            next_obs, reward, done, info = env.step(action)
+            next_obs, reward, done, truncated, info = env.step(action)
             memory.remember(reward, value, log_prob)
+            print(f"Reward: {reward}")
             score += reward
             obs = next_obs
             ep_steps += 1
@@ -35,10 +36,10 @@ def worker(name, input_shape, n_actions, global_agent, optimizer, env_id, n_thre
                 rewards, values, log_probs = memory.sample_memory()
                 loss = local_agent.calc_cost(obs, hx, done, rewards, values, log_probs)
                 optimizer.zero_grad()
-                hx = hx.detach_()
+                hx = hx.detach()
                 loss.backward()
                 T.nn.utils.clip_grad_norm(local_agent.parameters(), 40)
-                for local_param, global_param in zip(local_agent.parameters(), global_agent.parameters(), global_agent.parameters()):
+                for local_param, global_param in zip(local_agent.parameters(), global_agent.parameters()):
                     global_param._grad = local_param.grad
 
                 optimizer.step()
@@ -50,8 +51,8 @@ def worker(name, input_shape, n_actions, global_agent, optimizer, env_id, n_thre
             if name == '1':
                 scores.append(score)
                 avg_score = np.mean(scores[-100:])
-                print(f'A3C episode {episode} thread {name} of {n_threads} steps {t_steps/1e6 :.2f}M', 
-                      f'score {score :.2f} avg score (100) {avg_score:.2f}')
+                print(f'A3C episode {episode} thread {name} of {n_threads} steps {time_steps/1e6 :.2f}M', 
+                      f'score {score} avg score (100) {avg_score:.2f}')
 
         if name == '1':
             x = [z for z in range(episode)]

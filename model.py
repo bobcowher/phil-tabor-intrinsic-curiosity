@@ -65,11 +65,11 @@ class ActorCritic(nn.Module):
 
         for reward in rewards[::-1]:
             R = reward + self.gamma * R
-            batch_return.append(R)
-        batch_return.reverse()
-        batch_return = T.tensor(batch_return, dtype=T.float).reshape(values.size())
+            batch_returns.append(R)
+        batch_returns.reverse()
+        batch_returns = T.tensor(batch_returns, dtype=T.float).reshape(values.size())
 
-        return batch_return
+        return batch_returns
     
     
     def calc_cost(self, new_state, hx, done, rewards, values, log_probs):
@@ -100,6 +100,7 @@ class ActorCritic(nn.Module):
         critic_loss = F.mse_loss(values[:-1].squeeze(), returns)
                 
         entropy_loss = (-log_probs * T.exp(log_probs)).sum()
+        
         total_loss = actor_loss + critic_loss - 0.01 * entropy_loss
         return total_loss
 

@@ -1,9 +1,9 @@
 import gym
 import collections
-
-import gym.spaces
+# import gym.spaces
 import cv2
 import numpy as np
+import sys
 
 class RepeatAction(gym.Wrapper):
 
@@ -17,17 +17,18 @@ class RepeatAction(gym.Wrapper):
         t_reward = 0.0
         done = False
         for i in range(self.repeat):
-            obs, reward, done, info = self.env.step(action)
+            obs, reward, done, truncated, info = self.env.step(action)
             t_reward += reward
             if done:
                 break
-        return obs, t_reward, done, info
+        return obs, t_reward, done, truncated, info
     
+
     def reset(self):
-        obs, _ = self.env.reset()  # Unpack only the observation from reset
+        obs = self.env.reset()  # Unpack only the observation from reset
         if self.fire_first:
             assert self.env.unwrapped.get_action_meanings()[1] == 'FIRE'
-            obs, _, done, _ = self.env.step(1)  # Properly unpack the results from step
+            obs, reward, done, truncated, info = self.env.step(1)  # Properly unpack the results from step
             if done:
                 obs = self.env.reset()  # If done is True after FIRE, reset the environment again
         return obs
@@ -59,7 +60,7 @@ class StackFrames(gym.ObservationWrapper):
     
     def reset(self):
         self.stack.clear()
-        obs, _ = self.env.reset()
+        obs, info = self.env.reset()
         for _ in range(self.stack.maxlen):
             self.stack.append(obs)
 
@@ -73,7 +74,34 @@ class StackFrames(gym.ObservationWrapper):
 
 def make_env(env_name, shape=(42, 42, 1), repeat=4):
     env = gym.make(env_name)
-    # env = RepeatAction(env, repeat)
+    env = RepeatAction(env, repeat)
     env = PreprocessFrame(env, shape)
     env = StackFrames(env, repeat)
     return env
+
+def test_wrapped_env():
+    env_name = 'BreakoutDeterministic-v4'  # Choose an Atari environment
+
+    env = make_env(env_name)
+    
+    obs = env.reset()
+
+    # Test the reset method
+    initial_state = env.reset()
+    assert initial_state is not None, "Reset method failed to return an initial state."
+
+    # Perform a single action and test the step method
+    random_action = env.action_space.sample()
+
+    
+    result = env.step(random_action)
+
+    # try:
+    #     result = env.step(random_action)
+    #     print(f"Number of values returned by env.step(): {len(result)}")
+    # except Exception as e:
+    #     print(f"Error during env.step(): {e}")
+
+# Run the test function
+if __name__ == '__main__':
+    test_wrapped_env()
